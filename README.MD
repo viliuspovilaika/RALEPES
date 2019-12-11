@@ -10,6 +10,8 @@
     (if compiling manually, make sure to use the C++17 standard)
   - Run (preferably as root)
   
+#### For pre-built binaries go to the [releases page](https://github.com/viliuspovilaika/RALEPES/releases/)
+  
 ### Features
   * Get Linux system information
   * Get distribution name

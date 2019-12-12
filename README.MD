@@ -21,6 +21,8 @@
   * Get SSH keys
   * Get mounted device information
   * Get running processes' information
+  * Get installed software / versions
+  * Get networking information
   * Get vulnerabilities in the system
   * Clear the logs
   

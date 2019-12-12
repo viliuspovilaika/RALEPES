@@ -1,12 +1,15 @@
 #include <fstream>
 #include <list>
 #include <sys/utsname.h>
+#include <sys/socket.h>
 #include <cstdlib>
 #include <filesystem>
 #include <cstdio>
 #include "rcves.h"
+#include <ifaddrs.h>
+#include <arpa/inet.h>
 
-#define rversion "v0.1.2"
+#define rversion "v0.2.1"
 
 using namespace std;
 
@@ -108,6 +111,15 @@ string getCmdOutput(string cmd)
 	return data;
 }
 
+string getSafeCmdOutput(string cmd)
+{
+	string output = getCmdOutput(cmd);
+	if (output.substr(output.rfind(' ')+1, string("directory").size()) != "directory")
+		return output;
+	else
+		return "ERN";
+}
+
 void printMsg(string msg, int type)
 {
 	int color;
@@ -162,8 +174,8 @@ bool kernelWithinRange(string kernel, string rangestart, string rangeend)
 int main()
 {
 	printf("\n");
-    // Print banner
-    printf("\033[38;5;202m%s\033[0m\n\n\033[38;5;208mRALEPES\033[0m version \033[38;5;208m%s\033[0m\n\n\n", banner.c_str(), rversion);
+    	// Print banner
+    	printf("\n\n\033[38;5;202m%s\033[0m\n\n\033[38;5;208mRALEPES\033[0m version \033[38;5;208m%s\033[0m\n\n\n", banner.c_str(), rversion);
 	// Current Linux user
 	string iam = getenv("USER");
 	string homedir = "";
@@ -505,6 +517,119 @@ int main()
 	catch (...)
 	{
 		printMsg("Failed to get running processes", 4);
+	}
+	// Looking for installed software
+	printf("\n");
+	printMsg("Looking for installed software..", 1);
+	// GCC
+	try
+	{
+		string cmdout = getSafeCmdOutput("/bin/gcc -v");
+		if (cmdout != "ERN")
+		{
+			string versionblock = cmdout.substr(cmdout.find("gcc version"), cmdout.size());
+			versionblock = versionblock.substr(4, versionblock.size());
+			versionblock = versionblock.substr(versionblock.find(' ')+1, versionblock.size());
+			versionblock = versionblock.substr(0, versionblock.find(' '));
+			printMsg("GCC version: " + versionblock, 2);
+		}
+		else
+			printMsg("That's funny, we did not find GCC installed", 3);
+	}
+	catch (...)
+	{
+		printMsg("Error trying to determine GCC version", 4);
+	}
+	// Python
+	try
+	{
+		list<string> pythondirs = { "/bin/python", "/bin/python2", "/bin/python3" };
+		list<string>::iterator it;
+		list<string> pythonversions;
+		string cmdout;
+		string versionblock;
+		for (it = pythondirs.begin(); it != pythondirs.end(); it++)
+		{
+			cmdout = getSafeCmdOutput((*it)+" --version");
+			if (cmdout != "ERN")
+			{
+				versionblock = cmdout.substr(cmdout.find(' ')+1, cmdout.size());
+				versionblock = removeChar(versionblock, "\n");
+				pythonversions.push_back(versionblock);
+			}
+		}
+		pythonversions.sort();
+		pythonversions.unique();
+		if (pythonversions.size() == 0)
+			printMsg("Python seems not to be installed", 3);
+		else
+		{
+			for (it = pythonversions.begin(); it != pythonversions.end(); it++)
+			{
+				printMsg("Python" + (*it).substr(0, 1) + " version: " + *it, 2);
+			}
+		}
+	}
+	catch (...)
+	{
+		printMsg("Error trying to determine Python version", 4);
+	}
+	// Perl
+	try
+	{
+		string cmdout = getSafeCmdOutput("/bin/perl -v");
+		if (cmdout != "ERN")
+		{
+			string versionblock = cmdout.substr(cmdout.find('(')+1, cmdout.size());
+			versionblock = versionblock.substr(0, versionblock.find(')'));
+			printMsg("Perl version: " + versionblock, 2);
+		}
+		else
+			printMsg("Perl seems not to be installed", 3);
+	}
+	catch (...)
+	{
+		printMsg("Error trying to determine Perl version", 4);
+	}
+	// Ruby
+	try
+	{
+		string cmdout = getSafeCmdOutput("/bin/ruby -v");
+		if (cmdout != "ERN")
+		{
+			string versionblock = cmdout.substr(cmdout.find(' ')+1, cmdout.size());
+			versionblock = versionblock.substr(0, versionblock.find(' '));
+			printMsg("Ruby version: " + versionblock, 2);
+		}
+		else
+			printMsg("Ruby seems not to be installed", 3);
+	}
+	catch (...)
+	{
+		printMsg("Error trying to determine Ruby version", 4);
+	}
+    // Get network information
+	printf("\n");
+	printMsg("Getting network information..", 1);
+	try
+	{
+		struct ifaddrs *ifap, *ifa;
+		struct sockaddr_in *sa;
+		char *addr;
+		getifaddrs(&ifap);
+		for (ifa = ifap; ifa; ifa = ifa->ifa_next)
+		{
+			if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET)
+			{
+				sa = (struct sockaddr_in *) ifa->ifa_addr;
+				addr = inet_ntoa(sa->sin_addr);
+				printMsg("Interface " + string(ifa->ifa_name) + " has IP " + string(addr), 2);
+			}
+		}
+	}
+	catch (...)
+	{
+		printMsg("Could not get the network information", 4);
 	}
 	// Testing for CVE-2019-14287
 	printf("\n");

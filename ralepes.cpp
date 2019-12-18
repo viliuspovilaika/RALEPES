@@ -9,7 +9,7 @@
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 
-#define rversion "v0.2.1"
+#define rversion "v0.2.2"
 
 using namespace std;
 
@@ -662,11 +662,29 @@ int main()
             string cveend = (*it).substr((*it).rfind(':')+1, (*it).size());
             // todo 'unk' entries
             if (isNumber(kernel.substr(0, 1)) && isNumber(cvestart.substr(0, 1)) && isNumber(cveend.substr(0, 1)))
+	    {
                 if (kernelWithinRange(kernel, cvestart, cveend))
                 {
                     printf("\033[0;31m!!!!!\033[0m\033[0;1m\033[0;91m VULNERABLE \033[0m\033[0;31m!!!!!\033[0m \033[0;34m%s\033[0m\n", cvename.c_str());
                     cveed = true;
                 }
+	    }
+	    else if (cvestart.substr(0, 3) == "unk" && cveend.substr(0, 3) != "unk")
+	    {
+		if (kernelWithinRange(kernel, cveend, cveend))
+		{
+            printf("\033[0;31m!!!!!\033[0m\033[0;1m\033[0;91m VULNERABLE \033[0m\033[0;31m!!!!!\033[0m \033[0;34m%s\033[0m\n", cvename.c_str());
+			cveed = true;
+		}
+	    }
+	    else if (cveend.substr(0, 3) == "unk" && cvestart.substr(0, 3) != "unk")
+	    {
+	    	if (kernelWithinRange(kernel, cvestart, cvestart))
+		{
+            printf("\033[0;31m!!!!!\033[0m\033[0;1m\033[0;91m VULNERABLE \033[0m\033[0;31m!!!!!\033[0m \033[0;34m%s\033[0m\n", cvename.c_str());
+			cveed = true;
+		}
+	    }
     }
     if (!cveed)
         printMsg("No potential vulnerabilities found", 4);

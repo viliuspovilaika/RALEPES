@@ -31,5 +31,4 @@ Any feature suggestions or bug reports welcome.
 
 RALEPES is released under GNU GPLv3.0
 
-Written by Vilius Povilaika</br>
 https://twitter.com/vpovilaika
